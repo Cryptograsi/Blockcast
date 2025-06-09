@@ -57,7 +57,7 @@ Ben bazı hatalar aldım, hatayı nasıl çözdüğümü kısaca yazayım, siz d
    x-service: &service
   image: blockcast/cdn_gateway_go:${IMAGE_VERSION:-stable}
   restart: always
-  network_mode: "service:blockcastd"
+  
   volumes:
     - ${HOME}/.blockcast/certs:/var/opt/magma/certs
     - ${HOME}/.blockcast/snowflake:/etc/snowflake
@@ -70,12 +70,16 @@ services:
     <<: *service
     container_name: control_proxy
     command: /usr/bin/control_proxy
+    ports:
+      - "8443:8443"
 
   blockcastd:
     <<: *service
     container_name: blockcastd
     command: /usr/bin/blockcastd -logtostderr=true -v=0
     network_mode: bridge
+    ports:
+      - "50090:50090"
 
   beacond:
     <<: *service
