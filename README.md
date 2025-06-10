@@ -46,6 +46,9 @@ curl -s https://ipinfo.io | jq '.city, .region, .country, .loc'
 
 Hepsi bu kadar, gerisi site üzerinden nodun kayıt edilmesi.
 
+![Ekran görüntüsü 2025-06-10 133511](https://github.com/user-attachments/assets/8b909755-12d0-4f46-9c16-c633407b80b0)
+
+
 Ben bazı hatalar aldım, hatayı nasıl çözdüğümü kısaca yazayım, siz de duruma göre aynı yolu izleyebilirsiniz.
 
 
@@ -56,12 +59,11 @@ Ben bazı hatalar aldım, hatayı nasıl çözdüğümü kısaca yazayım, siz d
 ```
    x-service: &service
   image: blockcast/cdn_gateway_go:${IMAGE_VERSION:-stable}
-  restart: always
-  
+  restart: unless-stopped
+  network_mode: "service:blockcastd"
   volumes:
     - ${HOME}/.blockcast/certs:/var/opt/magma/certs
     - ${HOME}/.blockcast/snowflake:/etc/snowflake
-    - /var/run/docker.sock:/var/run/docker.sock
   labels:
     - "com.centurylinklabs.watchtower.enable=true"
 
@@ -70,33 +72,28 @@ services:
     <<: *service
     container_name: control_proxy
     command: /usr/bin/control_proxy
-    ports:
-      - "8443:8443"
 
   blockcastd:
     <<: *service
     container_name: blockcastd
     command: /usr/bin/blockcastd -logtostderr=true -v=0
     network_mode: bridge
-    ports:
-      - "50090:50090"
 
   beacond:
     <<: *service
     container_name: beacond
     command: /usr/bin/beacond -logtostderr=true -v=0
-    volumes:
-      - ${HOME}/.blockcast/configs:/etc/magma/configs
-      - ${HOME}/.blockcast/certs:/var/opt/magma/certs
-      - ${HOME}/.blockcast/snowflake:/etc/snowflake
-      - /var/run/docker.sock:/var/run/docker.sock
 
   watchtower:
     image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
     environment:
-      WATCHTOWER_LABEL_ENABLE: "true"
+      - WATCHTOWER_LABEL_ENABLE=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8081:8080"
 ```
 5) Bu iki kodla yeniden çalıştırdım:
 ```
